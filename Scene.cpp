@@ -76,7 +76,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const {
         Vector3f NN = normalize(lightInter.normal);
         Vector3f lightDirection = normalize(x - hitPoint);
         float distance = (x - hitPoint).norm();
-        Vector3f lightRayOrigin = (dotProduct(lightDirection, N) < 0) ? hitPoint - N * EPSILON : hitPoint + N * EPSILON;
+        Vector3f lightRayOrigin = (dotProduct(lightDirection, N) < 0) ? hitPoint - N * epsilon : hitPoint + N * epsilon;
         Ray shadowRay(lightRayOrigin, lightDirection);
         Intersection shadowInter = Scene::intersect(shadowRay);
 
@@ -88,7 +88,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const {
 
         if (get_random_float() < RussianRoulette) {
             Vector3f wi = normalize(intersection.m->sample(wo, N));
-            Vector3f reflectionRayOrig = (dotProduct(wi, N) < 0) ? hitPoint - N * EPSILON : hitPoint + N * EPSILON;
+            Vector3f reflectionRayOrig = (dotProduct(wi, N) < 0) ? hitPoint - N * epsilon : hitPoint + N * epsilon;
             Ray reflectionRay(reflectionRayOrig, wi);
             Intersection reflectionInter = Scene::intersect(reflectionRay);
             if (reflectionInter.happened && !reflectionInter.m->hasEmission()) {

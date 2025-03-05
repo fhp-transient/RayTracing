@@ -16,6 +16,7 @@ class Renderer
 {
 public:
     void Render(const Scene& scene);
-
+    void ompCastRay(const Scene& scene, std::vector<Vector3f> &framebuffer, int start, int end);
 private:
+    int spp = 100;
 };
