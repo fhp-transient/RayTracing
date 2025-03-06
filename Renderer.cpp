@@ -60,7 +60,7 @@ void Renderer::Render(const Scene &scene)
     const int remainder = scene.height % threadNum;
 
     // change the spp value to change sample ammount
-    spp = 1024;
+    spp = 10000;
     std::cout << "SPP: " << spp << "\n";
 
 #pragma omp parallel for
