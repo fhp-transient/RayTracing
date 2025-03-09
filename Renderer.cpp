@@ -82,7 +82,7 @@ void Renderer::Render(const Scene &scene)
     UpdateProgress(1.f);
 
     // save framebuffer to file
-    FILE *fp = fopen("sphere3.ppm", "wb");
+    FILE *fp = fopen("sphere_mirror.ppm", "wb");
     (void) fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i)
     {
