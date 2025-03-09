@@ -24,6 +24,11 @@ int main(int argc, char** argv)
     white->Kd = Vector3f(0.725f, 0.71f, 0.68f);
     Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f+0.058f, 0.747f+0.258f, 0.747f) + 15.6f * Vector3f(0.740f+0.287f,0.740f+0.160f,0.740f) + 18.4f *Vector3f(0.737f+0.642f,0.737f+0.159f,0.737f)));
     light->Kd = Vector3f(0.65f);
+    Material* microfacet = new Material(MICROFACET, Vector3f(0.0f));
+    microfacet->roughness = 0.25f;
+    microfacet->Ks = Vector3f(0.45, 0.45, 0.45);
+    microfacet->Kd = Vector3f(0.3, 0.3, 0.25);
+    microfacet->ior = 12.85;
 
     MeshTriangle floor("../models/cornellbox/floor.obj", white);
     MeshTriangle shortbox("../models/cornellbox/shortbox.obj", white);
@@ -31,13 +36,15 @@ int main(int argc, char** argv)
     MeshTriangle left("../models/cornellbox/left.obj", red);
     MeshTriangle right("../models/cornellbox/right.obj", green);
     MeshTriangle light_("../models/cornellbox/light.obj", light);
+    Sphere sphere1(Vector3f(150, 100, 200), 100, microfacet);
 
     scene.Add(&floor);
-    scene.Add(&shortbox);
-    scene.Add(&tallbox);
+    // scene.Add(&shortbox);
+    // scene.Add(&tallbox);
     scene.Add(&left);
     scene.Add(&right);
     scene.Add(&light_);
+    scene.Add(&sphere1);
 
     scene.buildBVH();
 
