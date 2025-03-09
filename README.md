@@ -4,7 +4,7 @@
 
 ![D:\Assignment7\binary.png](https://github.com/fhp-transient/RayTracing/blob/master/box_diffuse.png)
 
-## microfacet:spp = 1024: (2min)
+## microfacet:spp = 1024: (2min) roughness = 0.25
 
 ![D:\Assignment7\binary.png](https://github.com/fhp-transient/RayTracing/blob/master/sphere_microfacet.png)
 
