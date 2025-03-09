@@ -10,4 +10,4 @@
 
 ## mirror:spp = 1024: (2min)
 
-![D:\Assignment7\binary.png](https://github.com/fhp-transient/RayTracing/blob/master/sphere_miror.png)
+![D:\Assignment7\binary.png](https://github.com/fhp-transient/RayTracing/blob/master/sphere_mirror.png)
