@@ -149,9 +149,9 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         }
     }
     auto hitColor = L_dir + L_indir;
-    hitColor.x = (clamp(0, 1, hitColor.x));
-    hitColor.y = (clamp(0, 1, hitColor.y));
-    hitColor.z = (clamp(0, 1, hitColor.z));
+    // hitColor.x = (clamp(0, 1, hitColor.x));
+    // hitColor.y = (clamp(0, 1, hitColor.y));
+    // hitColor.z = (clamp(0, 1, hitColor.z));
 
     return hitColor;
 }

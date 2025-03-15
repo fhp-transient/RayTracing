@@ -5,6 +5,7 @@
 #ifndef RAYTRACING_MATERIAL_H
 #define RAYTRACING_MATERIAL_H
 
+#include "OBJ_Loader.hpp"
 #include "Vector.hpp"
 
 enum MaterialType { DIFFUSE, MICROFACET, MIRROR };
@@ -103,8 +104,11 @@ public:
     float specularExponent;
     float roughness;
     //Texture tex;
+    std::optional<std::string> matName;
 
-    inline Material(MaterialType t = DIFFUSE, Vector3f e = Vector3f(0, 0, 0));
+    inline Material(MaterialType t = MICROFACET, Vector3f e = Vector3f(0, 0, 0));
+
+    inline Material(const objl::Material& mat);
 
     inline MaterialType getType();
 
@@ -123,14 +127,38 @@ public:
 
     // given a ray, calculate the contribution of this ray
     inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
+
+    void setEmission(const Vector3f e) { m_emission = e; }
 };
 
 Material::Material(MaterialType t, Vector3f e)
 {
     m_type = t;
-    //m_color = c;
     m_emission = e;
+
+    // 让漫反射有一定颜色
+    Kd = Vector3f(0.8f, 0.2f, 0.2f);
+    // 让镜面系数不为0
+    Ks = Vector3f(0.2f, 0.2f, 0.2f);
+    // 指数适中，可以再调
+    specularExponent = 64.0f;
+    // 粗糙度小一点让高光集中
+    roughness = 0.05f;
+    ior = 1.5f; // 若为玻璃或其它介质
 }
+
+Material::Material(const objl::Material& mat)
+{
+    m_type = MICROFACET;
+    Kd = Vector3f(mat.Kd.X, mat.Kd.Y, mat.Kd.Z);
+    Ks = Vector3f(mat.Ks.X, mat.Ks.Y, mat.Ks.Z);
+    ior = mat.Ni;
+    specularExponent = mat.Ns;
+    roughness = 0.1f;
+    m_emission = Vector3f(0, 0, 0);
+    matName = mat.name;
+}
+
 
 MaterialType Material::getType() { return m_type; }
 ///Vector3f Material::getColor(){return m_color;}
@@ -196,19 +224,31 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N)
 
 Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N)
 {
+    float cosi = std::max(0.f, dotProduct(N, wi));
+    float coso = std::max(0.f, dotProduct(N, wo));
     switch (m_type)
     {
         case DIFFUSE:
         {
-            // calculate the contribution of diffuse   model
-            float cosalpha = dotProduct(N, wo);
-            if (cosalpha > 0.0f)
-            {
-                Vector3f diffuse = Kd / M_PI;
-                return diffuse;
-            }
-            return {0.0f};
-            break;
+            // 漫反射部分
+            float cosTheta = std::max(0.f, dotProduct(N, wo));
+            Vector3f diffuse = Kd / M_PI;
+            // 这里你可以根据需要加入 specular 分量
+            float cosR = std::max(0.f, dotProduct(reflect(-wi, N), wo));
+            Vector3f specular = Ks * std::pow(cosR, specularExponent);
+            // 注意：如果 Tr 表示透明度，可以在这里进一步处理混合
+            return diffuse + specular;
+
+
+            // // calculate the contribution of diffuse   model
+            // float cosalpha = dotProduct(N, wo);
+            // if (cosalpha > 0.0f)
+            // {
+            //     Vector3f diffuse = Kd / M_PI;
+            //     return diffuse;
+            // }
+            // return {0.0f};
+            // break;
         }
         case MIRROR:
         {
@@ -227,34 +267,40 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
         }
         case MICROFACET:
         {
-            float coso = dotProduct(N, wo);
-            float cosi = dotProduct(N, wi);
             if (coso > 0.0f && cosi > 0.0f)
             {
-                float F;
-                fresnel(wi, N, ior, F);
-                // const float Roughness = 0.1f;
-                const float roughness2 = roughness * roughness;
+                // Fresnel
+                float Fval;
+                fresnel(wi, N, ior, Fval);
 
-                // G
-                float A_wi = (-1.0f + std::sqrt(1.0f + roughness2 * (1.0f / (cosi * cosi) - 1.0f))) / 2.0f;
-                float A_wo = (-1.0f + std::sqrt(1.0f + roughness2 * (1.0f / (coso * coso) - 1.0f))) / 2.0f;
+                // Cook-Torrance近似: G * D * F / (4 cosi coso)
+                // 这里 roughness2 影响法线分布 D
+                float roughness2 = roughness * roughness;
+
+                // Geometry term G (Smith)
+                float A_wi = -1.0f + std::sqrt(1.0f + roughness2 * (1.0f / (cosi * cosi) - 1.0f));
+                float A_wo = -1.0f + std::sqrt(1.0f + roughness2 * (1.0f / (coso * coso) - 1.0f));
+                A_wi *= 0.5f;
+                A_wo *= 0.5f;
                 float G = std::min(1.0f, 1.0f / (A_wi + A_wo + 1.0f));
 
-                // D
-                Vector3f h = normalize(wi + wo);
-                float cosh = dotProduct(h, N);
-                float denominator = M_PI * std::pow(1.0f + cosh * cosh * (roughness2 - 1.0f), 2);
-                float D = std::min(1.0f, roughness2 / denominator);
+                // 法线分布函数 D (GGX 近似 or Beckmann)
+                Vector3f h = normalize(wi + wo); // 半程向量
+                float cosh = std::max(0.f, dotProduct(h, N));
+                // 这里简单用 Beckmann / GGX 都行
+                // 先用 GGX: D = alpha^2 / [ π * (cosh^2*(alpha^2-1)+1)^2 ]
+                float alpha2 = roughness2;
+                float denom = cosh * cosh * (alpha2 - 1.0f) + 1.0f;
+                float D = alpha2 / (M_PI * denom * denom);
 
-                // diffuse + specular, wrong implementation, just for assignment
-                Vector3f diffuse = (Vector3f(1.0f) - F) * Kd / M_PI;
-                auto specular = F * G * D / (4.0f * cosi * coso);
-                // specFactor = std::min(1.0f, specFactor);
+                // 漫反射
+                Vector3f diffuse = (1.0f - Fval) * (Kd / M_PI);
+                // specular
+                float spec = (Fval * G * D) / (4.0f * cosi * coso);
 
-                return diffuse + specular;
+                return diffuse + Vector3f(spec, spec, spec) * Ks;
             }
-            return {0.0f};
+            return Vector3f(0.f);
             break;
         }
     }

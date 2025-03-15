@@ -87,7 +87,8 @@ public:
 
     Vector3f evalDiffuseColor(const Vector2f &st) const
     {
-        //return m->getColor();
+        // return m->getColor();
+		return Vector3f(0);
     }
 
     Bounds3 getBounds()
