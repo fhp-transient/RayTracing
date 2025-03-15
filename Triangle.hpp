@@ -98,6 +98,66 @@ public:
 
 class MeshTriangle : public Object {
 public:
+    MeshTriangle(const std::string& filename, Material* default_mt = new Material())
+    {
+        objl::Loader loader;
+        loader.LoadFile(filename);
+
+        area = 0;
+        m = default_mt;
+
+        // init bounding box
+        Vector3f min_vert = Vector3f{ std::numeric_limits<float>::infinity(),
+                                      std::numeric_limits<float>::infinity(),
+                                      std::numeric_limits<float>::infinity() };
+        Vector3f max_vert = Vector3f{ -std::numeric_limits<float>::infinity(),
+                                      -std::numeric_limits<float>::infinity(),
+                                      -std::numeric_limits<float>::infinity() };
+
+        // clear triangles
+        triangles.clear();
+
+        for (auto& mesh : loader.LoadedMeshes) {
+            Material* meshMaterial;
+            if (mesh.MeshMaterial.has_value()) {
+                meshMaterial = new Material(mesh.MeshMaterial.value());
+            }
+            else {
+                meshMaterial = default_mt;
+            }
+
+            for (size_t i = 0; i < mesh.Vertices.size(); i += 3) {
+                std::array<Vector3f, 3> face_vertices;
+
+                for (int j = 0; j < 3; j++) {
+                    auto vert = Vector3f(mesh.Vertices[i + j].Position.X,
+                        mesh.Vertices[i + j].Position.Y,
+                        mesh.Vertices[i + j].Position.Z);
+                    face_vertices[j] = vert;
+
+                    min_vert.x = std::min(min_vert.x, vert.x);
+                    min_vert.y = std::min(min_vert.y, vert.y);
+                    min_vert.z = std::min(min_vert.z, vert.z);
+
+                    max_vert.x = std::max(max_vert.x, vert.x);
+                    max_vert.y = std::max(max_vert.y, vert.y);
+                    max_vert.z = std::max(max_vert.z, vert.z);
+                }
+
+                triangles.emplace_back(face_vertices[0], face_vertices[1],
+                    face_vertices[2], meshMaterial);
+            }
+        }
+
+        bounding_box = Bounds3(min_vert, max_vert);
+
+        std::vector<Object*> ptrs;
+        for (auto& tri : triangles) {
+            ptrs.push_back(&tri);
+            area += tri.area;
+        }
+        bvh = new BVHAccel(ptrs);
+    }
     MeshTriangle(objl::Mesh mesh, Vector3f emission = {0})
     {
         // objl::Loader loader;
