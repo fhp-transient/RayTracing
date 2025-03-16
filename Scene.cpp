@@ -74,12 +74,6 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         return {};
     }
 
-    // hit light
-    if (intersection.happened && intersection.m->hasEmission())
-    {
-        return intersection.emit;
-    }
-
     Vector3f L_dir(0);
     Vector3f L_indir(0);
 
@@ -87,9 +81,15 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     Vector3f N = normalize(intersection.normal);
     Vector3f wo = normalize(-ray.direction);
 
+    // hit light
+    if (intersection.happened && intersection.m->hasEmission())
+    {
+        L_dir += intersection.emit;
+    }
+
     switch (intersection.m->getType())
     {
-        case MIRROR:
+        case DIELECTRIC:
         {
             if (get_random_float() < RussianRoulette)
             {

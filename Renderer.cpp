@@ -19,12 +19,13 @@ omp_lock_t lock;
 void Renderer::ompCastRay(const Scene &scene, std::vector<Vector3f> &framebuffer, int start, int end)
 {
     // 计算视野缩放系数和长宽比
-    float scale = tan(deg2rad(20.1143 * 0.5));  // 使用 scene.fovy，单位为度
+    // float scale = tan(deg2rad(20.1143 * 0.5));  // 使用 scene.fovy，单位为度
+    float scale = tan(deg2rad(35.9834 * 0.5));  // 使用 scene.fovy，单位为度
     float imageAspectRatio = scene.width / (float) scene.height;
 
     // 使用场景中的摄像机参数
-    Vector3f eye_pos = Vector3f(28.2792, 5.2, 1.23612e-06);      // 例如 (28.2792, 5.2, 1.23612e-06)
-    Vector3f forward = normalize(Vector3f(0, 2.8, 0) - eye_pos);
+    Vector3f eye_pos = Vector3f(4.443147659301758, 16.934431076049805, 49.91023254394531);      // scene.camera.lookfrom
+    Vector3f forward = normalize(Vector3f(-2.5734899044036865, 9.991769790649414, -10.588199615478516) - eye_pos);
     Vector3f right = normalize(crossProduct(forward, Vector3f(0, 1, 0)));
     Vector3f cameraUp = crossProduct(right, forward);
 
@@ -75,7 +76,7 @@ void Renderer::Render(const Scene &scene)
     const int remainder = scene.height % threadNum;
 
     // change the spp value to change sample ammount
-    spp = 100;
+    spp = 32;
     std::cout << "SPP: " << spp << "\n";
 
 #pragma omp parallel for
@@ -97,14 +98,14 @@ void Renderer::Render(const Scene &scene)
     UpdateProgress(1.f);
 
     // save framebuffer to file
-    FILE *fp = fopen("test_mirror.ppm", "wb");
+    FILE *fp = fopen("test_bathroom1.ppm", "wb");
     (void) fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i)
     {
         static unsigned char color[3];
-        color[0] = (unsigned char) (255 * std::pow(clamp(0, 1, framebuffer[i].x), 0.6f));
-        color[1] = (unsigned char) (255 * std::pow(clamp(0, 1, framebuffer[i].y), 0.6f));
-        color[2] = (unsigned char) (255 * std::pow(clamp(0, 1, framebuffer[i].z), 0.6f));
+        color[0] = (unsigned char) (255.99 * std::sqrt(clamp(0, 1, framebuffer[i].x)));
+        color[1] = (unsigned char) (255.99 * std::sqrt(clamp(0, 1, framebuffer[i].y)));
+        color[2] = (unsigned char) (255.99 * std::sqrt(clamp(0, 1, framebuffer[i].z)));
         fwrite(color, 1, 3, fp);
     }
     fclose(fp);
