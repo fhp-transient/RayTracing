@@ -17,20 +17,21 @@ public:
         delete[] data;
     }
 
-    virtual Vector3f Evaluate(float u, float v, __attribute__((unused)) const Vector3f &p) const override {
+    [[nodiscard]] Vector3f Evaluate(float u, float v) const override {
         int i = (u) * nx;
         int j = (1 - v) * ny - 0.001;
         if (i < 0) i = 0;
         if (j < 0) j = 0;
         if (i > nx - 1) i = nx - 1;
         if (j > ny - 1) j = ny - 1;
-        float r = int(data[channel * i + channel * nx * j]) / 255.0;
-        float g = int(data[channel * i + channel * nx * j + 1]) / 255.0;
-        float b = int(data[channel * i + channel * nx * j + 2]) / 255.0;
+        int start = channel * i + channel * nx * j;
+        float r = int(data[start]) / 255.0;
+        float g = int(data[start + 1]) / 255.0;
+        float b = int(data[start + 2]) / 255.0;
         return Vector3f(r, g, b);
     }
 
-    virtual float EvaluateAlpha(float u, float v, __attribute__((unused)) const Vector3f &p) {
+    virtual float EvaluateAlpha(float u, float v) {
         if (channel == 4) {
             int i = (u) * nx;
             int j = (1 - v) * ny - 0.001;

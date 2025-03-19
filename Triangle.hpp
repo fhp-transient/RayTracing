@@ -8,8 +8,6 @@
 #include <cassert>
 #include <array>
 #include <unordered_map>
-// #define STB_IMAGE_IMPLEMENTATION
-// #include "stb_image.h"
 
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
@@ -106,71 +104,50 @@ public:
     {
         objl::Loader loader;
         loader.LoadFile(filename);
-
         area = 0;
         m = default_mt;
+        assert(loader.LoadedMeshes.size() == 1);
+        auto mesh = loader.LoadedMeshes[0];
 
-        // init bounding box
-        Vector3f min_vert = Vector3f{
-            std::numeric_limits<float>::infinity(),
-            std::numeric_limits<float>::infinity(),
-            std::numeric_limits<float>::infinity()
-        };
-        Vector3f max_vert = Vector3f{
-            -std::numeric_limits<float>::infinity(),
-            -std::numeric_limits<float>::infinity(),
-            -std::numeric_limits<float>::infinity()
-        };
-
-        // clear triangles
-        triangles.clear();
-
-        for (auto& mesh : loader.LoadedMeshes)
+        Vector3f min_vert = Vector3f{std::numeric_limits<float>::infinity(),
+                                     std::numeric_limits<float>::infinity(),
+                                     std::numeric_limits<float>::infinity()};
+        Vector3f max_vert = Vector3f{-std::numeric_limits<float>::infinity(),
+                                     -std::numeric_limits<float>::infinity(),
+                                     -std::numeric_limits<float>::infinity()};
+        for (size_t i = 0; i < mesh.Vertices.size(); i += 3)
         {
-            Material* meshMaterial;
-            if (mesh.MeshMaterial.has_value())
+            std::array<Vector3f, 3> face_vertices;
+            std::array<Vector2f, 3> face_textures;
+
+            for (int j = 0; j < 3; j++)
             {
-                meshMaterial = new Material(mesh.MeshMaterial.value());
+                auto vert = Vector3f(mesh.Vertices[i + j].Position.X,
+                                     mesh.Vertices[i + j].Position.Y,
+                                     mesh.Vertices[i + j].Position.Z);
+                auto text = Vector2f(mesh.Vertices[i + j].TextureCoordinate.X,
+                                     mesh.Vertices[i + j].TextureCoordinate.Y);
+                face_vertices[j] = vert;
+                face_textures[j] = text;
+
+                min_vert.x = std::min(min_vert.x, vert.x);
+                min_vert.y = std::min(min_vert.y, vert.y);
+                min_vert.z = std::min(min_vert.z, vert.z);
+
+                max_vert.x = std::max(max_vert.x, vert.x);
+                max_vert.y = std::max(max_vert.y, vert.y);
+                max_vert.z = std::max(max_vert.z, vert.z);
             }
-            else
-            {
-                meshMaterial = default_mt;
-            }
 
-            for (size_t i = 0; i < mesh.Vertices.size(); i += 3)
-            {
-                std::array<Vector3f, 3> face_vertices;
-                std::array<Vector2f, 3> face_textures;
-
-                for (int j = 0; j < 3; j++)
-                {
-                    auto vert = Vector3f(mesh.Vertices[i + j].Position.X,
-                                         mesh.Vertices[i + j].Position.Y,
-                                         mesh.Vertices[i + j].Position.Z);
-                    auto text = Vector2f(mesh.Vertices[i + j].TextureCoordinate.X,
-                                         mesh.Vertices[i + j].TextureCoordinate.Y);
-                    face_vertices[j] = vert;
-
-                    min_vert.x = std::min(min_vert.x, vert.x);
-                    min_vert.y = std::min(min_vert.y, vert.y);
-                    min_vert.z = std::min(min_vert.z, vert.z);
-
-                    max_vert.x = std::max(max_vert.x, vert.x);
-                    max_vert.y = std::max(max_vert.y, vert.y);
-                    max_vert.z = std::max(max_vert.z, vert.z);
-                }
-
-                triangles.emplace_back(face_vertices[0], face_vertices[1], face_vertices[2],
-                                       face_textures[0], face_textures[1], face_textures[2],
-                                       meshMaterial);
-            }
+            triangles.emplace_back(face_vertices[0], face_vertices[1], face_vertices[2],
+                                   face_textures[0], face_textures[1], face_textures[2],
+                                   default_mt);
         }
 
         bounding_box = Bounds3(min_vert, max_vert);
 
         std::vector<Object*> ptrs;
-        for (auto& tri : triangles)
-        {
+        for (auto& tri : triangles){
             ptrs.push_back(&tri);
             area += tri.area;
         }
@@ -209,6 +186,11 @@ public:
         else
             meshMaterial = new Material(MICROFACET, {0});
 
+        if (mesh.MeshMaterial.value().Ns > 200)
+        {
+            // std::cout << "--------------------name: " << meshMaterial->matName.value() << std::endl;
+            assert(meshMaterial->m_type == DIELECTRIC);
+        }
         // Vector3f diffuse = Vector3f(materials[m].diffuse[0], materials[m].diffuse[1], materials[m].diffuse[2]);
         // std::shared_ptr<Texture> diff_tex = std::make_shared<ConstantTexture>(diffuse);
 
@@ -230,6 +212,7 @@ public:
                 auto text = Vector2f(mesh.Vertices[i + j].TextureCoordinate.X,
                                      mesh.Vertices[i + j].TextureCoordinate.Y);
                 face_vertices[j] = vert;
+                face_textures[j] = text;
 
                 min_vert.x = std::min(min_vert.x, vert.x);
                 min_vert.y = std::min(min_vert.y, vert.y);

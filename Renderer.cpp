@@ -76,7 +76,7 @@ void Renderer::Render(const Scene &scene)
     const int remainder = scene.height % threadNum;
 
     // change the spp value to change sample ammount
-    spp = 32;
+    spp = 1024;
     std::cout << "SPP: " << spp << "\n";
 
 #pragma omp parallel for
@@ -98,7 +98,7 @@ void Renderer::Render(const Scene &scene)
     UpdateProgress(1.f);
 
     // save framebuffer to file
-    FILE *fp = fopen("test_bathroom1.ppm", "wb");
+    FILE *fp = fopen("bathroompro.ppm", "wb");
     (void) fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i)
     {

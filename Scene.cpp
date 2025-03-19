@@ -101,7 +101,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
                 {
                     if (float pdf = intersection.m->pdf(wo, wi, N); pdf > EPSILON)
                     {
-                        L_indir = castRay(reflectionRay, depth + 1) * intersection.m->eval(wi, wo, N) *
+                        L_indir = castRay(reflectionRay, depth + 1) * intersection.m->eval(wi, wo, N, intersection.tcoords) *
                                   std::max(0.f, dotProduct(wi, N)) / (pdf * RussianRoulette);
                     }
                 }
@@ -125,7 +125,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
 
             if (fabs(distance - shadowInter.distance) < EPSILON)
             {
-                L_dir = lightInter.emit * intersection.m->eval(lightDirection, wo, N) *
+                L_dir = lightInter.emit * intersection.m->eval(lightDirection, wo, N, intersection.tcoords) *
                         std::max(dotProduct(lightDirection, N), 0.f) * std::max(dotProduct(-lightDirection, NN), 0.f) /
                         (distance * distance * pdf_light);
             }
@@ -140,7 +140,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
                 {
                     if (float pdf = intersection.m->pdf(wo, wi, N); pdf > EPSILON)
                     {
-                        L_indir = castRay(reflectionRay, depth + 1) * intersection.m->eval(wi, wo, N) *
+                        L_indir = castRay(reflectionRay, depth + 1) * intersection.m->eval(wi, wo, N, intersection.tcoords) *
                                   std::max(0.f, dotProduct(wi, N)) / (pdf * RussianRoulette);
                     }
                 }

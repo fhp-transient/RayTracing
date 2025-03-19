@@ -12,11 +12,12 @@
 #include <algorithm>
 #include <memory>
 
-#include "Scene.hpp"
-#include "imageTexture.h"
 #include "ConstantTexture.h"
-#define STB_IMAGE_IMPLEMENTATION
+#include "global.hpp"
+#include "imageTexture.h"
+#include "Texture.h"
 #include "stb_image.h"
+
 
 struct Intersection;
 
@@ -115,7 +116,7 @@ public:
     // 计算采样方向的 PDF
     inline float pdf(const Vector3f& wi, const Vector3f& wo, const Vector3f& N);
     // 计算 BRDF 的值（包括漫反射和镜面反射混合）
-    inline Vector3f eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N, Intersection& inter);
+    inline Vector3f eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N, Vector2f& tcoords);
     void setEmission(const Vector3f e) { m_emission = e; }
 };
 
@@ -150,12 +151,13 @@ Material::Material(const objl::Material& mat)
 
     specularTexture = std::make_shared<ConstantTexture>(ks);
     // TODO: implement Texture, path:mat.map_Kd
-    if (mat.map_Kd.compare("") != 0)
+    if (!mat.map_Kd.empty())
     {
-        std::cout << "Get diffuse map : " << mat.map_Kd << std::endl;
         int nx, ny, nn;
-        // 注意：此处需要确保纹理路径正确，可以根据实际情况拼接路径
-        unsigned char* tex_data = stbi_load(mat.map_Kd.c_str(), &nx, &ny, &nn, 0);
+        // load texture data
+        std::string texturePath = "E:/GAMES101/RayTracing/models/bathroom2/" + mat.map_Kd;
+        std::cout << "Get diffuse map : " << texturePath << std::endl;
+        unsigned char* tex_data = stbi_load(texturePath.c_str(), &nx, &ny, &nn, 0);
         diffuseTexture = std::make_shared<ImageTexture>(tex_data, nx, ny, nn);
     }
     else
@@ -180,14 +182,21 @@ Material::Material(const objl::Material& mat)
     // 材质类型判断：若折射率接近 1，根据 ns 判断是否采用 MICROFACET 模型，否则为 DIELECTRIC（介质）
     if (fabs(ior - 1.0f) < 1e-3)
     {
-        if (fabs(ns - 1.0f) > 1e-6)
+        if (ns > 200.f)
+        {
+            m_type = DIELECTRIC;
+            ior = 12.85;
+            diffuseTexture = std::make_shared<ConstantTexture>(Vector3f(0.45, 0.45, 0.45));
+            specularTexture = std::make_shared<ConstantTexture>(Vector3f(0.3, 0.3, 0.25));
+        }
+        else if (fabs(ns - 1.0f) > 1e-6)
             m_type = MICROFACET; // 采用 BRDF 模型（漫反射 + 镜面反射混合）
         else
             m_type = DIFFUSE; // 纯漫反射
     }
     else
     {
-        m_type = DIELECTRIC;
+        m_type = DIFFUSE;
     }
 }
 
@@ -292,10 +301,13 @@ float Material::pdf(const Vector3f& wi, const Vector3f& wo, const Vector3f& N)
     return 0.0f;
 }
 
-Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N, Intersection& inter)
+Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N, Vector2f& tcoords)
 {
     float cosi = std::max(0.f, dotProduct(N, wi));
     float coso = std::max(0.f, dotProduct(N, wo));
+    Vector3f Kd = diffuseTexture->Evaluate(tcoords.x, tcoords.y);
+    Vector3f Ks = specularTexture->Evaluate(tcoords.x, tcoords.y);
+
     if (m_type == DIFFUSE)
     {
         return (coso > 0.0f ? (Kd / M_PI) : Vector3f(0, 0, 0));

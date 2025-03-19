@@ -11,9 +11,9 @@ class ConstantTexture : public Texture {
 public:
     ConstantTexture() = default;
 
-    ConstantTexture(Vector3f c) : color(c) {}
+    explicit ConstantTexture(Vector3f c) : color(c) {}
 
-    virtual Vector3f Evaluate(__attribute__((unused))  float u, __attribute__((unused))  float v, __attribute__((unused))  const Vector3f &p) const override {
+    [[nodiscard]] Vector3f Evaluate(float u, float v) const {
         return color;
     }
 

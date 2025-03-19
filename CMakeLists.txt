@@ -9,7 +9,10 @@ add_executable(RayTracing main.cpp Object.hpp Vector.cpp Vector.hpp Sphere.hpp g
         Texture.h
         imageTexture.h
         stb_image.h
-        ConstantTexture.h)
+        ConstantTexture.h
+        Texture.cpp
+        Material.cpp
+        stb_image.cpp)
 
 # openMP 配置
 #FIND_PACKAGE(OpenMP REQUIRED)
