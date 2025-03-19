@@ -25,3 +25,19 @@ zju 秋季作业结果：
 ## bathroom:spp = 1024:
 
 ![D:\Assignment7\binary.png](https://github.com/fhp-transient/RayTracing/blob/master/result/bathroom.png)
+
+## 优点：
+
+- 手动增加texture，原框架是没有的
+- 使用改进的ggx(依然不完美)
+- 使用omp和bvh加速
+
+## 不足：
+
+- 纹理没有阴影
+- bathroom不知为何有黑的区域
+- veach高光不足
+
+## 总结：
+
+方法都是一样的，只是pdf与material的定义不同，个人认为没有必要深究结果到达与目标一致，通过这次作业对蒙特卡洛光线追踪有了深入了解即可。
