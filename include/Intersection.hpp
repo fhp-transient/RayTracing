@@ -1,7 +1,3 @@
-//
-// Created by LEI XU on 5/16/19.
-//
-
 #ifndef RAYTRACING_INTERSECTION_H
 #define RAYTRACING_INTERSECTION_H
 #include "Vector.hpp"

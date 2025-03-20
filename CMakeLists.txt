@@ -3,23 +3,20 @@ project(RayTracing)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(RayTracing main.cpp Object.hpp Vector.cpp Vector.hpp Sphere.hpp global.hpp Triangle.hpp Scene.cpp
-        Scene.hpp Light.hpp AreaLight.hpp BVH.cpp BVH.hpp Bounds3.hpp Ray.hpp Material.hpp Intersection.hpp
-        Renderer.cpp Renderer.hpp
-        Texture.h
-        imageTexture.h
-        stb_image.h
-        ConstantTexture.h
-        Texture.cpp
-        Material.cpp
-        stb_image.cpp)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# openMP 配置
-#FIND_PACKAGE(OpenMP REQUIRED)
-#if (OPENMP_FOUND)
-#    message("OPENMP FOUND")
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#endif ()
+file(GLOB_RECURSE SRC_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+add_executable(RayTracing ${SRC_FILES})
+
+#add_executable(RayTracing src/main.cpp include/Object.hpp src/Vector.cpp include/Vector.hpp include/Sphere.hpp include/global.hpp include/Triangle.hpp src/Scene.cpp
+#        include/Scene.hpp include/Light.hpp include/AreaLight.hpp src/BVH.cpp include/BVH.hpp include/Bounds3.hpp include/Ray.hpp include/Material.hpp include/Intersection.hpp
+#        src/Renderer.cpp include/Renderer.hpp
+#        include/Texture.h
+#        include/imageTexture.h
+#        include/stb_image.h
+#        include/ConstantTexture.h
+#        src/Texture.cpp
+#        src/Material.cpp
+#        src/stb_image.cpp)
 
 set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -O3 -fopenmp")

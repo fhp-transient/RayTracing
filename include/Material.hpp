@@ -1,7 +1,3 @@
-//
-// Created by LEI XU on 5/16/19.
-//
-
 #ifndef RAYTRACING_MATERIAL_H
 #define RAYTRACING_MATERIAL_H
 
@@ -26,13 +22,11 @@ enum MaterialType { DIFFUSE, MICROFACET, DIELECTRIC };
 class Material
 {
 private:
-    // 计算反射方向
     Vector3f reflect(const Vector3f& I, const Vector3f& N) const
     {
         return I - 2 * dotProduct(I, N) * N;
     }
 
-    // 计算折射方向（Snell 定律）
     Vector3f refract(const Vector3f& I, const Vector3f& N, const float& ior) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
@@ -52,7 +46,6 @@ private:
         return k < 0 ? Vector3f(0, 0, 0) : eta * I + (eta * cosi - sqrtf(k)) * n;
     }
 
-    // 计算 Fresnel 反射系数
     void fresnel(const Vector3f& I, const Vector3f& N, const float& ior, float& kr) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
@@ -73,7 +66,6 @@ private:
         }
     }
 
-    // 将局部采样方向转换到世界坐标（给定法线 N）
     Vector3f toWorld(const Vector3f& a, const Vector3f& N)
     {
         Vector3f B, C;
@@ -98,24 +90,19 @@ public:
     Vector3f Kd, Ks;
     float specularExponent;
     float roughness;
-    // 新增：漫反射和镜面反射的混合权重
     float pDiffuse, pSpecular;
     std::optional<std::string> matName;
     std::shared_ptr<Texture> diffuseTexture;
     std::shared_ptr<Texture> specularTexture;
 
-    // 构造函数
     inline Material(MaterialType t = MICROFACET, Vector3f e = Vector3f(0, 0, 0));
     inline Material(const objl::Material& mat);
     inline MaterialType getType();
     inline Vector3f getColorAt(double u, double v);
     inline Vector3f getEmission();
     inline bool hasEmission();
-    // 对给定入射方向和法线采样新方向
     inline Vector3f sample(const Vector3f& wi, const Vector3f& N);
-    // 计算采样方向的 PDF
     inline float pdf(const Vector3f& wi, const Vector3f& wo, const Vector3f& N);
-    // 计算 BRDF 的值（包括漫反射和镜面反射混合）
     inline Vector3f eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N, Vector2f& tcoords);
     void setEmission(const Vector3f e) { m_emission = e; }
 };
@@ -136,11 +123,10 @@ Material::Material(MaterialType t, Vector3f e)
 
 Material::Material(const objl::Material& mat)
 {
-    // 提取 .mtl 文件中数据
     Vector3f kd(mat.Kd.X, mat.Kd.Y, mat.Kd.Z);
     Vector3f ks(mat.Ks.X, mat.Ks.Y, mat.Ks.Z);
-    float ns = mat.Ns; // 高光指数
-    float ni = mat.Ni; // 折射率
+    float ns = mat.Ns;
+    float ni = mat.Ni;
     matName = mat.name;
     Kd = kd;
     Ks = ks;
@@ -179,7 +165,6 @@ Material::Material(const objl::Material& mat)
         pDiffuse = 1.0f;
         pSpecular = 0.0f;
     }
-    // 材质类型判断：若折射率接近 1，根据 ns 判断是否采用 MICROFACET 模型，否则为 DIELECTRIC（介质）
     if (fabs(ior - 1.0f) < 1e-3)
     {
         if (ns > 200.f)
@@ -190,9 +175,9 @@ Material::Material(const objl::Material& mat)
             specularTexture = std::make_shared<ConstantTexture>(Vector3f(0.3, 0.3, 0.25));
         }
         else if (fabs(ns - 1.0f) > 1e-6)
-            m_type = MICROFACET; // 采用 BRDF 模型（漫反射 + 镜面反射混合）
+            m_type = MICROFACET;
         else
-            m_type = DIFFUSE; // 纯漫反射
+            m_type = DIFFUSE;
     }
     else
     {
@@ -200,25 +185,22 @@ Material::Material(const objl::Material& mat)
     }
 }
 
-// inline GGX 分布函数（NDF）
+// GGX NDF
 inline float GGXDistribution(float cosTheta, float alpha)
 {
     return (alpha * alpha) / (M_PI * pow((alpha * alpha - 1.0f) * cosTheta * cosTheta + 1.0f, 2.0f));
 }
 
-// inline Fresnel 函数（使用 Schlick 近似）
 inline Vector3f FresnelSchlick(float cosTheta, const Vector3f& F0)
 {
     return F0 + (Vector3f(1.0f, 1.0f, 1.0f) - F0) * pow(1.0f - cosTheta, 5.0f);
 }
 
-// 辅助函数：chiGGX（用于判断遮蔽，通常当 v 与 n 同向返回1，否则返回0）
 inline float chiGGX(float v)
 {
     return (v > 0.0f) ? 1.0f : 0.0f;
 }
 
-// inline 部分几何遮蔽项 G (GGX_PartialGeometryTerm)
 inline float GGX_PartialGeometryTerm(const Vector3f& v, const Vector3f& n, const Vector3f& h, float alpha)
 {
     float VoH = dotProduct(v, h);
@@ -235,7 +217,6 @@ Vector3f Material::getColorAt(double u, double v) { return Kd; }
 
 Vector3f Material::sample(const Vector3f& wi, const Vector3f& N)
 {
-    // 对于 DIFFUSE 和 MICROFACET 均采用余弦加权采样
     if (m_type == DIFFUSE || m_type == MICROFACET)
     {
         float x1 = get_random_float(), x2 = get_random_float();
@@ -256,7 +237,7 @@ Vector3f Material::sample(const Vector3f& wi, const Vector3f& N)
 
 float Material::pdf(const Vector3f& wi, const Vector3f& wo, const Vector3f& N)
 {
-    // DIFFUSE 情况下，直接使用余弦加权采样的 pdf
+    // DIFFUSE
     if (m_type == DIFFUSE)
     {
         if (dotProduct(wo, N) > 0.0f)
@@ -264,34 +245,27 @@ float Material::pdf(const Vector3f& wi, const Vector3f& wo, const Vector3f& N)
         else
             return 0.0f;
     }
-    // MICROFACET 情况下，使用混合 pdf（漫反射和镜面部分各自计算后加权）
+    // MICROFACET: mix of diffuse and specular
     else if (m_type == MICROFACET)
     {
-        // 计算漫反射部分的 pdf（CosinePDF）
         float pdf_diffuse = 0.0f;
         if (dotProduct(wo, N) > 0.0f)
             pdf_diffuse = dotProduct(wo, N) / M_PI;
         else
             pdf_diffuse = 0.0f;
 
-        // 计算镜面反射部分的 pdf（BRDFPDF）
-        // 这里将 wo 归一化作为出射方向 l
         Vector3f l = normalize(wo);
-        // 计算半程向量（使用入射方向 wi 和出射方向 wo）
         Vector3f h = normalize(wi + wo);
-        // 计算 h 与法线 N 的夹角余弦
         float cosTheta_h = fabs(dotProduct(h, N));
         float pdf_spec = 0.0f;
-        // 避免除 0 的情况
         if (fabs(dotProduct(wo, h)) > 1e-6)
         {
-            // 使用 GGX 分布函数计算 NDF 部分 D
             pdf_spec = GGXDistribution(cosTheta_h, roughness) * cosTheta_h / (4.0f * fabs(dotProduct(wo, h)));
         }
-        // 最后返回混合 pdf：pDiffuse * pdf_diffuse + pSpecular * pdf_spec
+        // MIX
         return pDiffuse * pdf_diffuse + pSpecular * pdf_spec;
     }
-    // DIELECTRIC 或其他情况视为 delta 分布，pdf 为 0
+    // DIELECTRIC
     else if (m_type == DIELECTRIC)
     {
         if (dotProduct(wo, N) > EPSILON)
@@ -324,24 +298,23 @@ Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& 
         }
         if (pSpecular > 1e-8)
         {
-            // 计算半程向量 h
+            // Half vector
             Vector3f h = normalize(wi + wo);
             float cosTheta = std::max(0.f, dotProduct(h, N));
 
-            // 使用 GGX 分布函数计算 D（将 roughness 作为 alpha 使用）
+            // D = GGX
             float D = GGXDistribution(cosTheta, roughness);
 
-            // 设定 F0 为 Ks（你也可以根据需要调整，F0 通常与材料的 specular reflectance 相关）
             Vector3f F0 = Ks;
-            // 计算 Fresnel 项，使用 wi 与 h 的夹角
+            // Fresnel
             Vector3f F = FresnelSchlick(dotProduct(wi, h), F0);
 
-            // 计算几何遮蔽项 G
+            // G
             float G = GGX_PartialGeometryTerm(wi, N, h, roughness);
 
-            // Cook-Torrance specular 部分
+            // Cook-Torrance specular
             float spec = (G * D) / (4.0f * cosi * coso);
-            specular = F * spec; // 逐分量相乘
+            specular = F * spec;
         }
         return diffuse * pDiffuse + specular * pSpecular;
     }

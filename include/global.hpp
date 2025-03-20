@@ -33,7 +33,7 @@ inline float get_random_float()
 {
     thread_local std::random_device dev;
     thread_local std::mt19937 rng(dev());
-    thread_local std::uniform_real_distribution<float> dist(0.f, 1.f); // distribution in range [1, 6]
+    thread_local std::uniform_real_distribution<float> dist(0.f, 1.f); // distribution in range [0, 1]
 
     return dist(rng);
 }

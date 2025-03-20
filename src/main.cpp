@@ -7,10 +7,6 @@
 #include <chrono>
 #include <unordered_map>
 
-// In the main function of the program, we create the scene (create objects and
-// lights) as well as set the options for the render (image width and height,
-// maximum recursion depth, field-of-view, etc.). We then call the render
-// function().
 int main(int argc, char** argv)
 {
     // Change the definition here to change resolution
